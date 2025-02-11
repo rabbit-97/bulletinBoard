@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator';
 import { signupValidation, updateValidation } from '../utils/validation.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
 import authenticateToken from '../middleware/authenticateToken.js';
+import { generateRefreshToken } from '../utils/auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -41,8 +42,25 @@ router.post('/login', async (req, res) => {
     });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      const token = generateToken(user.id);
-      res.status(200).json({ message: '로그인 성공', token });
+      const aToken = generateToken(user.id); // access token
+      const rToken = await generateRefreshToken(user.id); // refresh token
+
+      res.cookie('AccessToken', aToken, {
+        httpOnly: true,
+        maxAge: process.env.A_TOKEN_EXPIRES * 1000,
+      });
+      res.cookie('RefreshToken', rToken, {
+        httpOnly: true,
+        maxAge: process.env.R_TOKEN_EXPIRES * 1000,
+      });
+
+      // 리프레시 토큰을 데이터베이스에 저장
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: rToken },
+      });
+
+      res.status(200).json({ message: '로그인 성공' });
     } else {
       res
         .status(401)
