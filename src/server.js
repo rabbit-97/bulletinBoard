@@ -13,4 +13,4 @@ app.listen(PORT, () => {
 app.use(express.json());
 
 app.use('/api/account', accountRouter);
-app.use('/api/board', postRouter);
+app.use('/api/post', postRouter);
