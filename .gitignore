@@ -1,3 +1,4 @@
+# Ensure .env is ignored
 .env
 
 /node_modules

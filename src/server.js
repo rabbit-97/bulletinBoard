@@ -3,6 +3,9 @@ import accountRouter from './routes/accountRouter.js';
 import postRouter from './routes/postRouter.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocs } from './swagger/swaggerDocs.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 

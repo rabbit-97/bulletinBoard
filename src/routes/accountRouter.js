@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { validationResult } from 'express-validator';
 import { signupValidation, updateValidation } from '../utils/validation.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
+import authenticateToken from '../middleware/authenticateToken.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -72,7 +73,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 사용자 정보 업데이트
-router.put('/:id', updateValidation, async (req, res) => {
+router.put('/:id', authenticateToken, updateValidation, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -80,6 +81,9 @@ router.put('/:id', updateValidation, async (req, res) => {
   const { id } = req.params;
   const { email, password, nickname } = req.body;
   try {
+    if (req.user.userId !== parseInt(id)) {
+      return res.status(403).json({ error: '권한이 없습니다.' });
+    }
     const hashedPassword = await hashPassword(password);
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
@@ -93,9 +97,12 @@ router.put('/:id', updateValidation, async (req, res) => {
 });
 
 // 사용자 삭제
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
+    if (req.user.userId !== parseInt(id)) {
+      return res.status(403).json({ error: '권한이 없습니다.' });
+    }
     await prisma.user.delete({
       where: { id: parseInt(id) },
     });
