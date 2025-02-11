@@ -5,9 +5,10 @@ import { validationResult } from 'express-validator';
 import { signupValidation, updateValidation } from '../utils/validation.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
 import authenticateToken from '../middleware/authenticateToken.js';
-import { generateRefreshToken } from '../utils/auth.js';
+import { generateRefreshToken, verifyToken } from '../utils/tokenUtils.js';
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
+import { createUser, findUserByEmail, findUserById, updateUser, deleteUser } from '../db/userDb.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -21,12 +22,10 @@ router.post('/', signupValidation, async (req, res) => {
   const { email, password, nickname } = req.body;
   try {
     const hashedPassword = await hashPassword(password);
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        nickname,
-      },
+    const newUser = await createUser({
+      email,
+      password: hashedPassword,
+      nickname,
     });
     res.status(201).json({ message: '회원가입 성공', user: newUser });
   } catch (error) {
@@ -39,9 +38,7 @@ router.post('/', signupValidation, async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await findUserByEmail(email);
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const aToken = generateToken(user.id); // access token
@@ -57,10 +54,7 @@ router.post('/login', async (req, res) => {
       });
 
       // 리프레시 토큰을 데이터베이스에 저장
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken: rToken },
-      });
+      await updateUser(user.id, { refreshToken: rToken });
 
       res.status(200).json({ message: '로그인 성공' });
     } else {
@@ -78,9 +72,7 @@ router.post('/login', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const user = await findUserById(id);
     if (user) {
       res.status(200).json(user);
     } else {
@@ -105,10 +97,7 @@ router.put('/:id', authenticateToken, updateValidation, async (req, res) => {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
     const hashedPassword = await hashPassword(password);
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: { email, password: hashedPassword, nickname },
-    });
+    const user = await updateUser(id, { email, password: hashedPassword, nickname });
     res.status(200).json(user);
   } catch (error) {
     console.error('사용자 업데이트 오류:', error);
@@ -123,9 +112,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     if (req.user.userId !== parseInt(id)) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
-    await prisma.user.delete({
-      where: { id: parseInt(id) },
-    });
+    await deleteUser(id);
     res.status(204).send();
   } catch (error) {
     console.error('사용자 삭제 오류:', error);
@@ -140,13 +127,10 @@ router.post('/refresh-token', async (req, res) => {
     return res.status(401).json({ error: '리프레시 토큰이 필요합니다.' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, payload) => {
-    if (err) {
-      return res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
-    }
-
+  try {
+    const payload = verifyToken(token);
     const userId = payload.userId;
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await findUserById(userId);
 
     if (!user || user.refreshToken !== token) {
       return res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
@@ -163,10 +147,7 @@ router.post('/refresh-token', async (req, res) => {
 
     if (exp < nowAdd1Day) {
       const rToken = await generateRefreshToken(userId);
-      await prisma.user.update({
-        where: { id: userId },
-        data: { refreshToken: rToken },
-      });
+      await updateUser(userId, { refreshToken: rToken });
       res.cookie('RefreshToken', rToken, {
         httpOnly: true,
         maxAge: parseInt(process.env.R_TOKEN_EXPIRES) * 1000,
@@ -174,7 +155,9 @@ router.post('/refresh-token', async (req, res) => {
     }
 
     res.status(200).json({ message: '새로운 액세스 토큰이 발급되었습니다.' });
-  });
+  } catch (err) {
+    res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
+  }
 });
 
 // 로그아웃
