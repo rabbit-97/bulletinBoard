@@ -1,6 +1,6 @@
 import express from 'express';
 import accountRouter from './routes/accountRouter.js';
-import boardRouter from './routes/boardRouter.js';
+import postRouter from './routes/postRouter.js';
 
 const app = express();
 
@@ -13,4 +13,4 @@ app.listen(PORT, () => {
 app.use(express.json());
 
 app.use('/api/account', accountRouter);
-app.use('/api/board', boardRouter);
+app.use('/api/board', postRouter);

@@ -1,6 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { createPost } from '../handlers/postHandler.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -35,21 +36,8 @@ async function uploadFileToS3(file) {
 // 게시글 생성
 router.post('/', async (req, res) => {
   const { title, content, authorId, attachments } = req.body;
-  if (attachments.length > 3) {
-    return res.status(400).json({ error: '첨부파일은 최대 3개까지 첨부할 수 있습니다.' });
-  }
   try {
-    const attachmentUrls = await Promise.all(attachments.map(uploadFileToS3));
-    const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        authorId,
-        attachments: {
-          create: attachmentUrls.map((url) => ({ url })),
-        },
-      },
-    });
+    const post = await createPost({ title, content, authorId, attachments });
     res.status(201).json(post);
   } catch (error) {
     console.error('게시글 생성 오류:', error);
