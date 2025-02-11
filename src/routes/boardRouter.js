@@ -1,8 +1,34 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import AWS from 'aws-sdk';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// AWS S3 설정
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+// 파일 업로드 함수
+async function uploadFileToS3(file) {
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: `${Date.now()}_${file.originalname}`,
+    Body: file.buffer,
+    ACL: 'public-read',
+  };
+
+  try {
+    const data = await s3.upload(params).promise();
+    return data.Location; // S3에 저장된 파일의 URL 반환
+  } catch (error) {
+    console.error('S3 업로드 오류:', error);
+    throw new Error('파일 업로드 실패');
+  }
+}
 
 // 게시글 생성
 router.post('/', async (req, res) => {
@@ -11,13 +37,14 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: '첨부파일은 최대 3개까지 첨부할 수 있습니다.' });
   }
   try {
+    const attachmentUrls = await Promise.all(attachments.map(uploadFileToS3));
     const post = await prisma.post.create({
       data: {
         title,
         content,
         authorId,
         attachments: {
-          create: attachments.map((url) => ({ url })),
+          create: attachmentUrls.map((url) => ({ url })),
         },
       },
     });
