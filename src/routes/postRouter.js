@@ -1,7 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createPost } from '../handlers/postHandler.js';
+import { createPost, uploadFileToS3 } from '../handlers/postHandler.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -14,24 +14,6 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
-
-// 파일 업로드 함수
-async function uploadFileToS3(file) {
-  const params = {
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: `${Date.now()}_${file.originalname}`,
-    Body: file.buffer,
-  };
-
-  try {
-    const command = new PutObjectCommand(params);
-    const data = await s3.send(command);
-    return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
-  } catch (error) {
-    console.error('S3 업로드 오류:', error);
-    throw new Error('파일 업로드 실패');
-  }
-}
 
 // 게시글 생성
 router.post('/', async (req, res) => {

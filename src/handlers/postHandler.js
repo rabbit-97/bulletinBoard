@@ -28,14 +28,19 @@ export async function createPost({ title, content, authorId, attachments }) {
   });
 }
 
-async function uploadFileToS3(file) {
+export async function uploadFileToS3(file) {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: `${Date.now()}_${file.originalname}`,
     Body: file.buffer,
   };
 
-  const command = new PutObjectCommand(params);
-  const data = await s3.send(command);
-  return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+  try {
+    const command = new PutObjectCommand(params);
+    const data = await s3.send(command);
+    return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+  } catch (error) {
+    console.error('S3 업로드 오류:', error);
+    throw new Error('파일 업로드 실패');
+  }
 }
