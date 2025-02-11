@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
@@ -13,8 +13,11 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@babel/preset-env": "^7.26.8",
+    "babel-jest": "^29.7.0",
     "prettier": "^3.5.0",
-    "prisma": "^6.3.1"
+    "prisma": "^6.3.1",
+    "supertest": "^7.0.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.744.0",

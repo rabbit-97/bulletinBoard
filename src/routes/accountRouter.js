@@ -6,9 +6,8 @@ import { signupValidation, updateValidation } from '../utils/validation.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import { generateRefreshToken, verifyToken } from '../utils/tokenUtils.js';
-import jwt from 'jsonwebtoken';
 import moment from 'moment';
-import { createUser, findUserByEmail, findUserById, updateUser, deleteUser } from '../db/userDb.js';
+import { createUser, deleteUser, findUserByEmail, findUserById, updateUser } from '../db/userDb.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
