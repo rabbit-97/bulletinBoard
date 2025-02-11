@@ -6,6 +6,8 @@ import { signupValidation, updateValidation } from '../utils/validation.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import { generateRefreshToken } from '../utils/auth.js';
+import jwt from 'jsonwebtoken';
+import moment from 'moment';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -128,6 +130,67 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('사용자 삭제 오류:', error);
     res.status(400).json({ error: '사용자 삭제 실패', details: error.message });
+  }
+});
+
+// 새로운 액세스 토큰 발급
+router.post('/refresh-token', async (req, res) => {
+  const token = req.cookies.RefreshToken;
+  if (!token) {
+    return res.status(401).json({ error: '리프레시 토큰이 필요합니다.' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, payload) => {
+    if (err) {
+      return res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
+    }
+
+    const userId = payload.userId;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.refreshToken !== token) {
+      return res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
+    }
+
+    const aToken = generateToken(userId);
+    res.cookie('AccessToken', aToken, {
+      httpOnly: true,
+      maxAge: parseInt(process.env.A_TOKEN_EXPIRES) * 1000,
+    });
+
+    const exp = moment(payload.exp * 1000);
+    const nowAdd1Day = moment().add(1, 'days');
+
+    if (exp < nowAdd1Day) {
+      const rToken = await generateRefreshToken(userId);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: rToken },
+      });
+      res.cookie('RefreshToken', rToken, {
+        httpOnly: true,
+        maxAge: parseInt(process.env.R_TOKEN_EXPIRES) * 1000,
+      });
+    }
+
+    res.status(200).json({ message: '새로운 액세스 토큰이 발급되었습니다.' });
+  });
+});
+
+// 로그아웃
+router.post('/logout', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+    res.clearCookie('AccessToken');
+    res.clearCookie('RefreshToken');
+    res.status(200).json({ message: '로그아웃 성공' });
+  } catch (error) {
+    console.error('로그아웃 오류:', error);
+    res.status(500).json({ error: '로그아웃 실패', details: error.message });
   }
 });
 
