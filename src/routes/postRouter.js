@@ -17,6 +17,45 @@ const s3 = new S3Client({
   },
 });
 
+/**
+ * @swagger
+ * /api/post:
+ *   post:
+ *     summary: "게시글을 생성합니다."
+ *     tags: [Post]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               authorId:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: "게시글 생성 성공"
+ *       400:
+ *         description: "게시글 생성 실패"
+ */
+
+/**
+ * @swagger
+ * /api/post:
+ *   get:
+ *     summary: "모든 게시글을 조회합니다."
+ *     tags: [Post]
+ *     responses:
+ *       200:
+ *         description: "게시글 목록 조회 성공"
+ *       500:
+ *         description: "게시글 목록 조회 실패"
+ */
+
 // 게시글 생성
 router.post('/', authenticateToken, async (req, res) => {
   const { title, content, attachments } = req.body;
@@ -42,6 +81,66 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: '게시글 조회 실패', details: error.message });
   }
 });
+
+/**
+ * @swagger
+ * /api/post/{id}:
+ *   get:
+ *     summary: "특정 게시글을 조회합니다."
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: "게시글 조회 성공"
+ *       404:
+ *         description: "게시글을 찾을 수 없습니다."
+ *
+ *   put:
+ *     summary: "게시글을 수정합니다."
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "게시글 수정 성공"
+ *       400:
+ *         description: "게시글 수정 실패"
+ *
+ *   delete:
+ *     summary: "게시글을 삭제합니다."
+ *     tags: [Post]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: "게시글 삭제 성공"
+ *       400:
+ *         description: "게시글 삭제 실패"
+ */
 
 // 특정 게시글 조회
 router.get('/:id', async (req, res) => {

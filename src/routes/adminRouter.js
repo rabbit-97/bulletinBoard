@@ -8,6 +8,31 @@ import { hashPassword, generateToken, generateRefreshToken } from '../utils/auth
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/admin/signup:
+ *   post:
+ *     summary: "관리자 계정을 생성합니다."
+ *     tags: [Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               nickname:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: "관리자 계정 생성 성공"
+ *       400:
+ *         description: "관리자 계정 생성 실패"
+ */
 // 관리자 회원가입
 router.post('/signup', async (req, res) => {
   const { email, password, nickname } = req.body;
@@ -32,6 +57,69 @@ router.post('/signup', async (req, res) => {
 });
 
 /////////////////////////////////////////// 계정 관련 어드민 권한 api/admin/account //////////////////////////////////////////////////////
+/**
+ * @swagger
+ * /api/admin/account/{id}:
+ *   get:
+ *     summary: "사용자 정보를 조회합니다."
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: "사용자 정보 조회 성공"
+ *       404:
+ *         description: "사용자를 찾을 수 없습니다."
+ *
+ *   put:
+ *     summary: "사용자 정보를 업데이트합니다."
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               nickname:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "사용자 정보 업데이트 성공"
+ *       400:
+ *         description: "사용자 정보 업데이트 실패"
+ *
+ *   delete:
+ *     summary: "사용자를 삭제합니다."
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: "사용자 삭제 성공"
+ *       400:
+ *         description: "사용자 삭제 실패"
+ */
 // 사용자 정보 조회
 router.get('/account/:id', authenticateToken, checkAdmin, async (req, res) => {
   const { id } = req.params;
@@ -74,6 +162,50 @@ router.delete('/account/:id', authenticateToken, checkAdmin, async (req, res) =>
 });
 
 /////////////////////////////////////////// 게시글 관련 권한 api/admin/post //////////////////////////////////////////////////////
+/**
+ * @swagger
+ * /api/admin/post/{id}:
+ *   put:
+ *     summary: "게시글 정보를 업데이트합니다."
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "게시글 정보 업데이트 성공"
+ *       400:
+ *         description: "게시글 정보 업데이트 실패"
+ *
+ *   delete:
+ *     summary: "게시글을 삭제합니다."
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: "게시글 삭제 성공"
+ *       400:
+ *         description: "게시글 삭제 실패"
+ */
 // 게시글 정보 업데이트
 router.put('/post/:id', authenticateToken, checkAdmin, async (req, res) => {
   const { id } = req.params;

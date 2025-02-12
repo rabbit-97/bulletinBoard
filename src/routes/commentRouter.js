@@ -5,6 +5,94 @@ import authenticateToken from '../middleware/authenticateToken.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+/**
+ * @swagger
+ * /api/comment:
+ *   post:
+ *     summary: "댓글을 생성합니다."
+ *     tags: [Comment]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *               postId:
+ *                 type: integer
+ *               parentId:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: "댓글 생성 성공"
+ *       400:
+ *         description: "댓글 생성 실패"
+ */
+
+/**
+ * @swagger
+ * /api/comment/{postId}:
+ *   get:
+ *     summary: "댓글을 조회합니다."
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: "댓글 조회 성공"
+ *       500:
+ *         description: "댓글 조회 실패"
+ */
+
+/**
+ * @swagger
+ * /api/comment/{id}:
+ *   put:
+ *     summary: "댓글을 수정합니다."
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "댓글 수정 성공"
+ *       400:
+ *         description: "댓글 수정 실패"
+ *
+ *   delete:
+ *     summary: "댓글을 삭제합니다."
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: "댓글 삭제 성공"
+ *       400:
+ *         description: "댓글 삭제 실패"
+ */
+
 // 댓글 생성
 router.post('/', authenticateToken, async (req, res) => {
   const { content, postId, parentId } = req.body;

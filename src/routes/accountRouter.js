@@ -11,6 +11,56 @@ import { createUser, deleteUser, findUserByEmail, findUserById, updateUser } fro
 const router = express.Router();
 const prisma = new PrismaClient();
 
+/**
+ * @swagger
+ * /api/account:
+ *   post:
+ *     summary: "새로운 계정을 생성합니다."
+ *     tags: [Account]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               nickname:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: "회원가입 성공"
+ *       400:
+ *         description: "회원가입 실패"
+ */
+
+/**
+ * @swagger
+ * /api/account/login:
+ *   post:
+ *     summary: "사용자가 로그인합니다."
+ *     tags: [Account]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "로그인 성공"
+ *       401:
+ *         description: "로그인 실패"
+ */
+
 // 회원가입 라우트
 router.post('/', signupValidation, async (req, res) => {
   const errors = validationResult(req);
@@ -66,6 +116,68 @@ router.post('/login', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/account/{id}:
+ *   get:
+ *     summary: "사용자 정보를 조회합니다."
+ *     tags: [Account]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: "사용자 정보 조회 성공"
+ *       404:
+ *         description: "사용자를 찾을 수 없습니다."
+ *
+ *   put:
+ *     summary: "사용자 정보를 업데이트합니다."
+ *     tags: [Account]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               nickname:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: "사용자 정보 업데이트 성공"
+ *       400:
+ *         description: "사용자 정보 업데이트 실패"
+ *
+ *   delete:
+ *     summary: "사용자를 삭제합니다."
+ *     tags: [Account]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: "사용자 삭제 성공"
+ *       400:
+ *         description: "사용자 삭제 실패"
+ */
+
 // 사용자 정보 조회
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
@@ -118,6 +230,21 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/account/refresh-token:
+ *   post:
+ *     summary: "새로운 액세스 토큰을 발급받습니다."
+ *     tags: [Account]
+ *     responses:
+ *       200:
+ *         description: "새로운 액세스 토큰 발급 성공"
+ *       401:
+ *         description: "리프레시 토큰이 필요합니다."
+ *       403:
+ *         description: "유효하지 않은 리프레시 토큰입니다."
+ */
+
 // 새로운 액세스 토큰 발급
 router.post('/refresh-token', async (req, res) => {
   const token = req.cookies.RefreshToken;
@@ -157,6 +284,19 @@ router.post('/refresh-token', async (req, res) => {
     res.status(403).json({ error: '유효하지 않은 리프레시 토큰입니다.' });
   }
 });
+
+/**
+ * @swagger
+ * /api/account/logout:
+ *   post:
+ *     summary: "사용자가 로그아웃합니다."
+ *     tags: [Account]
+ *     responses:
+ *       200:
+ *         description: "로그아웃 성공"
+ *       500:
+ *         description: "로그아웃 실패"
+ */
 
 // 로그아웃
 router.post('/logout', authenticateToken, async (req, res) => {
