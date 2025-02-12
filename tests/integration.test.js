@@ -3,13 +3,28 @@ import app from '../src/server.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
+let testEmail;
+let testPassword;
+
+beforeAll(async () => {
+  testEmail = `test_${Date.now()}@example.com`;
+  testPassword = process.env.TEST_USER_PASSWORD;
+  const nickname = `testuser_${Date.now()}`;
+
+  await request(app).post('/api/account').send({
+    email: testEmail,
+    password: testPassword,
+    nickname,
+  });
+});
+
 describe('Integration Tests', () => {
   it('should sign up a new user or pass if email already exists', async () => {
     const email = `unique_${Date.now()}@example.com`;
     const nickname = `testuser_${Date.now()}`;
     const response = await request(app).post('/api/account').send({
       email,
-      password: 'Password123',
+      password: process.env.TEST_USER_PASSWORD,
       nickname,
     });
     if (response.statusCode === 201) {
@@ -21,7 +36,7 @@ describe('Integration Tests', () => {
 
     const loginResponse = await request(app).post('/api/account/login').send({
       email,
-      password: 'Password123',
+      password: process.env.TEST_USER_PASSWORD,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -57,18 +72,18 @@ describe('Integration Tests', () => {
   });
 
   it('should log in a user', async () => {
-    const response = await request(app).post('/api/account/login').send({
-      email: 'unique@example.com',
-      password: 'Password123',
+    const loginResponse = await request(app).post('/api/account/login').send({
+      email: testEmail,
+      password: testPassword,
     });
-    expect(response.statusCode).toBe(200);
-    expect(response.body).toHaveProperty('message', '로그인 성공');
+    expect(loginResponse.statusCode).toBe(200);
+    expect(loginResponse.body).toHaveProperty('message', '로그인 성공');
   });
 
   it('should create and delete a post', async () => {
     const loginResponse = await request(app).post('/api/account/login').send({
-      email: 'unique@example.com',
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -94,8 +109,8 @@ describe('Integration Tests', () => {
 
   it('should log out a user', async () => {
     const loginResponse = await request(app).post('/api/account/login').send({
-      email: 'unique@example.com',
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -120,8 +135,8 @@ describe('Integration Tests', () => {
     const userId = response.body.user.id;
 
     const loginResponse = await request(app).post('/api/account/login').send({
-      email,
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -146,8 +161,8 @@ describe('Integration Tests', () => {
     const userId = response.body.user.id;
 
     const loginResponse = await request(app).post('/api/account/login').send({
-      email,
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -167,8 +182,8 @@ describe('Integration Tests', () => {
 
   it('should create and delete a comment', async () => {
     const loginResponse = await request(app).post('/api/account/login').send({
-      email: 'unique@example.com',
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
@@ -244,8 +259,8 @@ describe('Integration Tests', () => {
   it('should not allow more than 4 nested comments', async () => {
     const maxDepth = parseInt(process.env.MAX_COMMENT_DEPTH);
     const loginResponse = await request(app).post('/api/account/login').send({
-      email: 'unique@example.com',
-      password: 'Password123',
+      email: testEmail,
+      password: testPassword,
     });
     const cookies = loginResponse.headers['set-cookie'];
     const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
