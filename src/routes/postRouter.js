@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createPost, uploadFileToS3 } from '../handlers/postHandler.js';
 import authenticateToken from '../middleware/authenticateToken.js';
+import { findPostById, updatePost, deletePost } from '../db/postDb.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -46,10 +47,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const post = await prisma.post.findUnique({
-      where: { id: parseInt(id) },
-      include: { attachments: true },
-    });
+    const post = await findPostById(id);
     if (post) {
       if (post.authorId !== req.user.userId) {
         return res.status(403).json({ error: '권한이 없습니다.' });
@@ -69,14 +67,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
   try {
-    const post = await prisma.post.findUnique({ where: { id: parseInt(id) } });
+    const post = await findPostById(id);
     if (!post || post.authorId !== req.user.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
-    const updatedPost = await prisma.post.update({
-      where: { id: parseInt(id) },
-      data: { title, content },
-    });
+    const updatedPost = await updatePost(id, { title, content });
     res.status(200).json(updatedPost);
   } catch (error) {
     console.error('게시글 업데이트 오류:', error);
@@ -88,13 +83,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    const post = await prisma.post.findUnique({ where: { id: parseInt(id) } });
+    const post = await findPostById(id);
     if (!post || post.authorId !== req.user.userId) {
       return res.status(403).json({ error: '권한이 없습니다.' });
     }
-    await prisma.post.delete({
-      where: { id: parseInt(id) },
-    });
+    await deletePost(id);
     res.status(204).send();
   } catch (error) {
     console.error('게시글 삭제 오류:', error);
