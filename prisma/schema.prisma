@@ -15,6 +15,7 @@ model User {
   posts        Post[] // 유저가 작성 한 글 - post 테이블과 참조
   refreshToken String? // 리프레시 토큰 저장
   comments     Comment[]
+  role         String    @default("user")
 }
 
 model Attachment {

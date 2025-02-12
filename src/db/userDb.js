@@ -21,3 +21,12 @@ export const updateUser = async (id, data) => {
 export const deleteUser = async (id) => {
   return prisma.user.delete({ where: { id: parseInt(id) } });
 };
+
+export const createAdminUser = async (data) => {
+  return prisma.user.create({
+    data: {
+      ...data,
+      role: 'admin',
+    },
+  });
+};

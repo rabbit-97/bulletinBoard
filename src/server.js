@@ -5,6 +5,7 @@ import commentRouter from './routes/commentRouter.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocs } from './swagger/swaggerDocs.js';
 import dotenv from 'dotenv';
+import adminRouter from './routes/adminRouter.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/account', accountRouter);
 app.use('/api/post', postRouter);
 app.use('/api/comment', commentRouter);
+app.use('/api/admin', adminRouter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
