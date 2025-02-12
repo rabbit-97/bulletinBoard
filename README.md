@@ -1,11 +1,13 @@
 # Bulletin Board Server
 
-이 프로젝트는 게시판 기능을 제공하는 서버입니다. 사용자는 게시글을 작성하고, 조회하고, 수정하고, 삭제할 수 있으며, 사용자 계정을 생성하고 로그인할 수 있습니다.
+이 프로젝트는 게시판 기능을 제공하는 서버입니다. 사용자는 게시글을 작성하고, 조회하고, 수정하고, 삭제할 수 있으며, 사용자 계정을 생성하고 로그인할 수 있습니다. 또한, 댓글을 작성하고 관리할 수 있으며, 관리자 권한을 통해 사용자 및 게시글을 관리할 수 있습니다.
 
 ## 주요 기능
 
 - **사용자 관리**: 회원가입, 로그인, 사용자 정보 조회, 수정, 삭제
 - **게시글 관리**: 게시글 작성, 조회, 수정, 삭제
+- **댓글 관리**: 댓글 작성, 조회, 수정, 삭제
+- **관리자 기능**: 사용자 및 게시글 관리
 - **파일 업로드**: AWS S3를 사용한 파일 업로드
 
 ## 기술 스택
@@ -36,11 +38,18 @@
 
    ```plaintext
    DATABASE_URL="mysql://username:password@localhost:3306/board"
+
    AWS_ACCESS_KEY_ID=your_access_key_id
    AWS_SECRET_ACCESS_KEY=your_secret_access_key
    AWS_REGION=your_region
    AWS_S3_BUCKET_NAME=your_bucket_name
+
    JWT_SECRET_KEY=your_jwt_secret_key
+
+   A_TOKEN_EXPIRES=3600
+   R_TOKEN_EXPIRES=604800
+
+   MAX_COMMENT_DEPTH=4
    ```
 
 4. **데이터베이스 마이그레이션**
