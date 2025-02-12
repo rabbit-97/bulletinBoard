@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 const prisma = new PrismaClient();
 const s3 = new S3Client({
@@ -33,10 +33,10 @@ export async function createPost({ title, content, authorId, attachments }) {
   });
 }
 
-async function uploadFileToS3(file) {
+export async function uploadFileToS3(file) {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: `${Date.now()}_${file.originalname}`,
+    Key: `${Date.now()}_${file.originalname}`,// 유저가 만약에 동시에 업로드 할 경우 - 유저의 아이디 값도 같이 이름으로
     Body: file.buffer,
   };
 

@@ -8,29 +8,45 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  nickname     String   @unique
-  email        String   @unique
+  id           Int       @id @default(autoincrement())
+  nickname     String    @unique
+  email        String    @unique
   password     String
-  posts        Post[]   // 유저가 작성 한 글 - post 테이블과 참조
-  refreshToken String?  // 리프레시 토큰 저장
+  posts        Post[] // 유저가 작성 한 글 - post 테이블과 참조
+  refreshToken String? // 리프레시 토큰 저장
+  comments     Comment[]
 }
 
 model Attachment {
-  id       Int    @id @default(autoincrement())
-  url      String
-  post     Post   @relation(fields: [postId], references: [id])
-  postId   Int
+  id     Int    @id @default(autoincrement())
+  url    String
+  post   Post   @relation(fields: [postId], references: [id])
+  postId Int
 }
 
 model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String
+  id          Int          @id @default(autoincrement())
+  title       String
+  content     String
   // 첨부파일은 테이블 따로 파서 진행하기 - 첨부파일이 여러개일때 모든 첨부파일의 각 각의 주소를 데이터베이스에 저장하고 실제 파일은 아마존 s3에 저장
-  createdAt DateTime @default(now())
-  author    User     @relation(fields: [authorId], references: [id]) // 게시글의 작성자
-  authorId  Int // 유저 모델의 id 를 참조하는 외래키
+  createdAt   DateTime     @default(now())
+  author      User         @relation(fields: [authorId], references: [id]) // 게시글의 작성자
+  authorId    Int // 유저 모델의 id 를 참조하는 외래키
   attachments Attachment[]
+  comments    Comment[]
 }
 
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  Int
+  post      Post      @relation(fields: [postId], references: [id])
+  postId    Int
+  // 대댓글이 어떤 댓글에 대한 답글인지 나타내기 위해 사용, 대댓글이 참조하는 부모 댓글을 가리킴
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  parentId  Int?
+  // 특정 댓글이 최상위 댓글일 때 그 댓글에 달린 모든 대댓글을 배열 형태로 저장하는 필드
+  children  Comment[] @relation("CommentToComment")
+  createdAt DateTime  @default(now())
+}
