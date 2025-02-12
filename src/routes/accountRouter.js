@@ -3,9 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { validationResult } from 'express-validator';
 import { signupValidation, updateValidation } from '../utils/validation.js';
-import { generateToken, hashPassword } from '../utils/auth.js';
+import { generateRefreshToken, generateToken, hashPassword, verifyToken } from '../utils/auth.js';
 import authenticateToken from '../middleware/authenticateToken.js';
-import { generateRefreshToken, verifyToken } from '../utils/tokenUtils.js';
 import moment from 'moment';
 import { createUser, deleteUser, findUserByEmail, findUserById, updateUser } from '../db/userDb.js';
 
