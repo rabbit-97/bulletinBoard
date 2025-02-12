@@ -3,8 +3,33 @@ import { deleteUser, findUserById, updateUser } from '../db/userDb.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import checkAdmin from '../middleware/checkAdmin.js';
 import { deletePost, updatePost } from '../db/postDb.js';
+import { createAdminUser } from '../db/userDb.js';
+import { hashPassword, generateToken, generateRefreshToken } from '../utils/auth.js';
 
 const router = express.Router();
+
+// 관리자 회원가입
+router.post('/signup', async (req, res) => {
+  const { email, password, nickname } = req.body;
+  try {
+    const hashedPassword = await hashPassword(password);
+    const newAdmin = await createAdminUser({ email, password: hashedPassword, nickname });
+    const aToken = generateToken(newAdmin.id);
+    const rToken = await generateRefreshToken(newAdmin.id);
+    res.cookie('AccessToken', aToken, {
+      httpOnly: true,
+      maxAge: process.env.A_TOKEN_EXPIRES * 1000,
+    });
+    res.cookie('RefreshToken', rToken, {
+      httpOnly: true,
+      maxAge: process.env.R_TOKEN_EXPIRES * 1000,
+    });
+    res.status(201).json({ message: '관리자 회원가입 성공', user: newAdmin });
+  } catch (error) {
+    console.error('관리자 회원가입 오류:', error);
+    res.status(400).json({ error: '관리자 회원가입 실패', details: error.message });
+  }
+});
 
 /////////////////////////////////////////// 계정 관련 어드민 권한 api/admin/account //////////////////////////////////////////////////////
 // 사용자 정보 조회
