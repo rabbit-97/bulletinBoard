@@ -11,6 +11,11 @@ const s3 = new S3Client({
 });
 
 export async function createPost({ title, content, authorId, attachments }) {
+  attachments = attachments || [];
+  if (!Array.isArray(attachments)) {
+    throw new Error('첨부파일은 배열이어야 합니다.');
+  }
+
   if (attachments.length > 3) {
     throw new Error('첨부파일은 최대 3개까지 첨부할 수 있습니다.');
   }
@@ -28,19 +33,14 @@ export async function createPost({ title, content, authorId, attachments }) {
   });
 }
 
-export async function uploadFileToS3(file) {
+async function uploadFileToS3(file) {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: `${Date.now()}_${file.originalname}`,
     Body: file.buffer,
   };
 
-  try {
-    const command = new PutObjectCommand(params);
-    const data = await s3.send(command);
-    return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
-  } catch (error) {
-    console.error('S3 업로드 오류:', error);
-    throw new Error('파일 업로드 실패');
-  }
+  const command = new PutObjectCommand(params);
+  const data = await s3.send(command);
+  return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
 }
