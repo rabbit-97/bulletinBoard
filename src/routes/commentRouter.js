@@ -38,6 +38,7 @@ router.post('/', authenticateToken, async (req, res) => {
         authorId,
         postId,
         parentId,
+        depth,
       },
     });
     res.status(201).json(comment);

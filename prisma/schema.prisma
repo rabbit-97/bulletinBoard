@@ -49,4 +49,5 @@ model Comment {
   // 특정 댓글이 최상위 댓글일 때 그 댓글에 달린 모든 대댓글을 배열 형태로 저장하는 필드
   children  Comment[] @relation("CommentToComment")
   createdAt DateTime  @default(now())
+  depth     Int      @default(0)
 }
