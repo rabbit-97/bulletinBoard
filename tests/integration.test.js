@@ -1,5 +1,7 @@
 import request from 'supertest';
 import app from '../src/server.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 describe('Integration Tests', () => {
   it('should sign up a new user or pass if email already exists', async () => {
@@ -237,5 +239,51 @@ describe('Integration Tests', () => {
       .delete(`/api/admin/account/${adminUserId}`)
       .set('Authorization', `Bearer ${adminAccessToken}`);
     expect(adminDeleteResponse.statusCode).toBe(204);
+  });
+
+  it('should not allow more than 4 nested comments', async () => {
+    const maxDepth = parseInt(process.env.MAX_COMMENT_DEPTH);
+    const loginResponse = await request(app).post('/api/account/login').send({
+      email: 'unique@example.com',
+      password: 'Password123',
+    });
+    const cookies = loginResponse.headers['set-cookie'];
+    const accessTokenCookie = cookies.find((cookie) => cookie.includes('AccessToken'));
+    const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
+    expect(accessToken).toBeDefined();
+
+    const postResponse = await request(app)
+      .post('/api/post')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Test Post for Comments',
+        content: 'This is a test post for comments.',
+      });
+    const postId = postResponse.body.id;
+
+    let parentId = null;
+    for (let i = 0; i <= maxDepth; i++) {
+      const commentResponse = await request(app)
+        .post('/api/comment')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          content: `This is comment level ${i + 1}.`,
+          postId: postId,
+          parentId: parentId,
+        });
+      expect(commentResponse.statusCode).toBe(201);
+      parentId = commentResponse.body.id;
+    }
+
+    const fifthCommentResponse = await request(app)
+      .post('/api/comment')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        content: `This is comment level ${maxDepth + 2}.`,
+        postId: postId,
+        parentId: parentId,
+      });
+    expect(fifthCommentResponse.statusCode).toBe(400);
+    expect(fifthCommentResponse.body).toHaveProperty('error', '댓글 깊이 제한을 초과했습니다.');
   });
 });
