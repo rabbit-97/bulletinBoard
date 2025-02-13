@@ -20,8 +20,13 @@
         padding: 5px;
         border-bottom: 1px solid #eee;
       }
+      .input-group {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
       input {
-        width: 80%;
+        width: 70%;
         padding: 5px;
       }
       button {
@@ -30,45 +35,183 @@
     </style>
   </head>
   <body>
+    <a
+      href="http://localhost:3000/api-docs"
+      target="_blank"
+      style="display: block; text-align: center; margin-bottom: 20px"
+      >API 문서 보러가기</a
+    >
+
+    <div id="board">
+      <h1>/api/post - 게시판</h1>
+      <button onclick="fetchPosts(1)">공지사항</button>
+      <button onclick="fetchPosts(2)">게시판</button>
+      <div id="postList"></div>
+    </div>
+
+    <div id="account">
+      <h1>/api/account - 회원가입 및 로그인</h1>
+      <input id="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+      <button onclick="signup()">Sign Up</button>
+      <button onclick="login()">Log In</button>
+      <div id="accountResult"></div>
+    </div>
+
     <div id="chat">
-      <h1>Chat Room</h1>
+      <h1>/api/chat - Chat Room</h1>
       <div id="messages"></div>
-      <input id="messageInput" placeholder="Enter message" />
-      <button onclick="sendMessage()">Send</button>
-      <button onclick="fetchPosts()">Fetch Posts</button>
+      <div class="input-group">
+        <input id="messageInput" placeholder="Enter message" />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+      <button onclick="joinRoom('1')">1번 방 입장</button>
+      <button onclick="joinRoom('2')">2번 방 입장</button>
+      <button onclick="joinRoom('3')">3번 방 입장</button>
     </div>
 
     <script>
       const socket = io('http://localhost:3000'); // 서버 주소에 맞게 변경
+      let currentRoom = null; // 현재 방 정보를 저장
 
       socket.on('SEND_MESSAGE', (msg) => {
-        const messagesDiv = document.getElementById('messages');
-        const messageElement = document.createElement('div');
-        messageElement.className = 'message';
-        messageElement.textContent = `${msg.sender}: ${msg.content}`;
-        messagesDiv.appendChild(messageElement);
+        if (msg.room === currentRoom) {
+          // 현재 방과 일치하는 메시지만 표시
+          const messagesDiv = document.getElementById('messages');
+          const messageElement = document.createElement('div');
+          messageElement.className = 'message';
+          messageElement.textContent = `${msg.sender}: ${msg.content}`;
+          messagesDiv.appendChild(messageElement);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight; // 스크롤을 맨 아래로
+        }
+      });
+
+      socket.on('LEAVE_ROOM', (msg) => {
+        if (msg.room === currentRoom) {
+          const messagesDiv = document.getElementById('messages');
+          const messageElement = document.createElement('div');
+          messageElement.className = 'message';
+          messageElement.textContent = `${msg.sender}: ${msg.content}`;
+          messagesDiv.appendChild(messageElement);
+        }
       });
 
       function sendMessage() {
         const messageInput = document.getElementById('messageInput');
         const message = messageInput.value;
-        const room = 'default'; // 테스트할 방 이름
-        socket.emit('SEND_MESSAGE', JSON.stringify({ room, message }));
-        messageInput.value = '';
+        if (currentRoom) {
+          // 현재 방이 설정된 경우에만 메시지 전송
+          socket.emit('SEND_MESSAGE', JSON.stringify({ room: currentRoom, message }));
+
+          // 메시지를 전송한 후 화면에 즉시 추가
+          const messagesDiv = document.getElementById('messages');
+          const messageElement = document.createElement('div');
+          messageElement.className = 'message';
+          messageElement.textContent = `나: ${message}`;
+          messagesDiv.appendChild(messageElement);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight; // 스크롤을 맨 아래로
+
+          messageInput.value = '';
+        } else {
+          alert('먼저 방에 입장하세요.');
+        }
       }
 
       // 방에 입장
-      socket.emit('JOIN_ROOM', 'default');
+      function joinRoom(room) {
+        if (currentRoom) {
+          socket.emit('LEAVE_ROOM', currentRoom);
+        }
+        currentRoom = room; // 현재 방 설정
+        socket.emit('JOIN_ROOM', room);
+        console.log(`Joined room ${room}`);
+        document.getElementById('messages').innerHTML = ''; // 메시지 초기화
+      }
 
       // API 통신: 게시글 가져오기
-      async function fetchPosts() {
+      async function fetchPosts(boardId) {
         try {
-          const response = await fetch('http://localhost:3000/api/post');
+          const response = await fetch(`http://localhost:3000/api/post?boardId=${boardId}`);
           const posts = await response.json();
-          console.log('Posts:', posts);
-          alert('Posts fetched! Check console for details.');
+          const postList = document.getElementById('postList');
+          postList.innerHTML = ''; // 기존 내용을 지웁니다.
+
+          posts.forEach((post) => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+            postElement.innerHTML = `
+              <strong>Title:</strong> ${post.title}
+              <button onclick="viewPost(${post.id})">내용보기</button>
+              <div id="postContent${post.id}" style="display:none;">
+                <p><strong>Content:</strong> ${post.content}</p>
+                <div><strong>Attachments:</strong></div>
+                <ul>
+                  ${post.attachments.map((attachment) => `<li><a href="${attachment.url}" target="_blank">${attachment.url}</a></li>`).join('')}
+                </ul>
+                <div id="comments${post.id}"></div>
+              </div>
+            `;
+            postList.appendChild(postElement);
+          });
         } catch (error) {
           console.error('Error fetching posts:', error);
+        }
+      }
+
+      async function viewPost(postId) {
+        const postContentDiv = document.getElementById(`postContent${postId}`);
+        if (postContentDiv.style.display === 'none') {
+          postContentDiv.style.display = 'block';
+          try {
+            const response = await fetch(`http://localhost:3000/api/comment/${postId}`);
+            const comments = await response.json();
+            const commentsDiv = document.getElementById(`comments${postId}`);
+            commentsDiv.innerHTML = '<strong>Comments:</strong><br>';
+            comments.forEach((comment) => {
+              const commentElement = document.createElement('div');
+              commentElement.className = 'comment';
+              commentElement.textContent = comment.content;
+              commentsDiv.appendChild(commentElement);
+            });
+          } catch (error) {
+            console.error('Error fetching comments:', error);
+          }
+        } else {
+          postContentDiv.style.display = 'none';
+        }
+      }
+
+      // 회원가입
+      async function signup() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try {
+          const response = await fetch('http://localhost:3000/api/account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const result = await response.json();
+          document.getElementById('accountResult').textContent = result.message || result.error;
+        } catch (error) {
+          console.error('Error signing up:', error);
+        }
+      }
+
+      // 로그인
+      async function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try {
+          const response = await fetch('http://localhost:3000/api/account/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const result = await response.json();
+          document.getElementById('accountResult').textContent = result.message || result.error;
+        } catch (error) {
+          console.error('Error logging in:', error);
         }
       }
     </script>
