@@ -181,7 +181,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 게시글 업데이트
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, checkAdminPermission, async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
   try {
@@ -198,7 +198,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // 게시글 삭제
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, checkAdminPermission, async (req, res) => {
   const { id } = req.params;
   try {
     const post = await findPostById(id);
