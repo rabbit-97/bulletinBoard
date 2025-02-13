@@ -67,10 +67,10 @@ const s3 = new S3Client({
 
 // 게시글 생성
 router.post('/', authenticateToken, async (req, res) => {
-  const { title, content, attachments } = req.body;
+  const { title, content, attachments, boardId } = req.body;
   const authorId = req.user.userId; // 토큰에서 추출한 사용자 ID
   try {
-    const post = await createPost({ title, content, authorId, attachments });
+    const post = await createPost({ title, content, authorId, attachments, boardId });
     res.status(201).json(post);
   } catch (error) {
     console.error('게시글 생성 오류:', error);
@@ -80,8 +80,10 @@ router.post('/', authenticateToken, async (req, res) => {
 
 // 모든 게시글 조회
 router.get('/', async (req, res) => {
+  const { boardId } = req.query; // 쿼리 파라미터로 boardId 받기
   try {
     const posts = await prisma.post.findMany({
+      where: boardId ? { boardId: parseInt(boardId) } : {}, // boardId가 있으면 필터링
       include: { attachments: true },
     });
     res.status(200).json(posts);

@@ -25,6 +25,12 @@ model Attachment {
   postId Int
 }
 
+model Board {
+  id        Int      @id @default(autoincrement())
+  name      String
+  posts     Post[]
+}
+
 model Post {
   id          Int          @id @default(autoincrement())
   title       String
@@ -35,6 +41,8 @@ model Post {
   authorId    Int // 유저 모델의 id 를 참조하는 외래키
   attachments Attachment[]
   comments    Comment[]
+  boardId     Int
+  board       Board        @relation(fields: [boardId], references: [id])
 }
 
 model Comment {
