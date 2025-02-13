@@ -9,6 +9,7 @@ import adminRouter from './routes/adminRouter.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import chatSocketHandler from './sockets/chat.js';
+import boardRouter from './routes/boardRouter.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/account', accountRouter);
 app.use('/api/post', postRouter);
 app.use('/api/comment', commentRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/board', boardRouter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
