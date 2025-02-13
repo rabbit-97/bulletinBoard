@@ -36,6 +36,15 @@ const s3 = new S3Client({
  *                 type: string
  *               authorId:
  *                 type: integer
+ *               attachments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     originalname:
+ *                       type: string
+ *                     buffer:
+ *                       type: string
  *     responses:
  *       201:
  *         description: "게시글 생성 성공"

@@ -20,7 +20,9 @@ export async function createPost({ title, content, authorId, attachments }) {
     throw new Error('첨부파일은 최대 3개까지 첨부할 수 있습니다.');
   }
 
-  const attachmentUrls = await Promise.all(attachments.map(uploadFileToS3));
+  const attachmentUrls = await Promise.all(
+    attachments.map((file) => uploadFileToS3(file, authorId)),
+  );
   return prisma.post.create({
     data: {
       title,
@@ -33,14 +35,21 @@ export async function createPost({ title, content, authorId, attachments }) {
   });
 }
 
-export async function uploadFileToS3(file) {
+export async function uploadFileToS3(file, authorId) {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: `${Date.now()}_${file.originalname}`,// 유저가 만약에 동시에 업로드 할 경우 - 유저의 아이디 값도 같이 이름으로
+    Key: `${authorId}_${Date.now()}_${file.originalname}`, // 사용자 ID와 타임스탬프를 키에 포함
     Body: file.buffer,
   };
 
-  const command = new PutObjectCommand(params);
-  const data = await s3.send(command);
-  return `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+  try {
+    const data = await s3.send(new PutObjectCommand(params));
+    console.log('파일 업로드 성공:', data);
+    // S3에 저장된 파일의 URL 생성
+    const fileUrl = `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+    return fileUrl;
+  } catch (error) {
+    console.error('파일 업로드 오류:', error);
+    throw error;
+  }
 }

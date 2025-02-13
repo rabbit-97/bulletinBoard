@@ -28,6 +28,4 @@ app.use('/api/admin', adminRouter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 댓글 기능 관리자 기능 추가
-
-// 환경변수에서 뎁스를 칼럼에 표시 일정 이상이상으로 못넘어가게
+// 게시판 메뉴, 웹소켓 - 실시간 채팅 기능
