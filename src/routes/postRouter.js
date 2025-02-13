@@ -1,9 +1,10 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createPost, uploadFileToS3 } from '../handlers/postHandler.js';
+import { S3Client } from '@aws-sdk/client-s3';
+import { createPost } from '../handlers/postHandler.js';
 import authenticateToken from '../middleware/authenticateToken.js';
-import { findPostById, updatePost, deletePost } from '../db/postDb.js';
+import { deletePost, findPostById, updatePost } from '../db/postDb.js';
+import { checkAdminPermission } from '../middleware/checkAdmin.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -66,9 +67,16 @@ const s3 = new S3Client({
  */
 
 // 게시글 생성
-router.post('/', authenticateToken, async (req, res) => {
+// board 테이블 생성 - boardId는 게시판 아이디를 의미 하며 boardId 가 만약에 1이 공지사항 같은 권한이 걸려있는 게시판이면 룰 타입이 유저인 계정은 이 게시판이 글을 못쓴다.
+// 개선사항 - boardId를 환경 변수로 지정해서 관리자만 작성 하게 할 수 있지 않을까?
+router.post('/', authenticateToken, checkAdminPermission, async (req, res) => {
   const { title, content, attachments, boardId } = req.body;
-  const authorId = req.user.userId; // 토큰에서 추출한 사용자 ID
+  const authorId = req.user.userId;
+
+  if (!boardId) {
+    return res.status(400).json({ error: 'boardId가 필요합니다.' });
+  }
+
   try {
     const post = await createPost({ title, content, authorId, attachments, boardId });
     res.status(201).json(post);
