@@ -38,8 +38,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use(express.static('public'));
 
-// 게시판 메뉴, 웹소켓 - 실시간 채팅 기능
-
 // 소켓 이벤트 처리
 io.on('connection', (socket) => {
   chatSocketHandler(io, socket);

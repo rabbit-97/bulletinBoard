@@ -43,9 +43,9 @@
     >
 
     <div id="board">
-      <h1>/api/post - 게시판</h1>
-      <button onclick="fetchPosts(1)">공지사항</button>
-      <button onclick="fetchPosts(2)">게시판</button>
+      <h1>/api/board - 게시판</h1>
+      <button onclick="fetchPosts(1)">/api/post?boardId=1 - 공지사항</button>
+      <button onclick="fetchPosts(2)">/api/post?boardId=2 - 게시글</button>
       <div id="postList"></div>
     </div>
 
@@ -141,7 +141,7 @@
             postElement.className = 'post';
             postElement.innerHTML = `
               <strong>Title:</strong> ${post.title}
-              <button onclick="viewPost(${post.id})">내용보기</button>
+              <button onclick="viewPost(${post.id})">/api/post/${post.id} - 내용보기</button>
               <div id="postContent${post.id}" style="display:none;">
                 <p><strong>Content:</strong> ${post.content}</p>
                 <div><strong>Attachments:</strong></div>
