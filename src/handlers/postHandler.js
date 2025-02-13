@@ -10,7 +10,7 @@ const s3 = new S3Client({
   },
 });
 
-export async function createPost({ title, content, authorId, attachments }) {
+export async function createPost({ title, content, authorId, attachments, boardId }) {
   attachments = attachments || [];
   if (!Array.isArray(attachments)) {
     throw new Error('첨부파일은 배열이어야 합니다.');
@@ -28,6 +28,7 @@ export async function createPost({ title, content, authorId, attachments }) {
       title,
       content,
       authorId,
+      boardId,
       attachments: {
         create: attachmentUrls.map((url) => ({ url })),
       },
