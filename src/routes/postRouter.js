@@ -216,6 +216,9 @@ router.delete('/:id', authenticateToken, checkAdminPermission, async (req, res) 
   }
 });
 
+// 레디스를 로컬에서 사용하면 이렇게 적용하면 사용 가능한데
+// 문제는 배포할때는 6379 포트를 열고 사용해야한다.
+// 추가로 보완 설정 같은것도 지정을 해야해서 좀 더 찾아보기
 // 검색 엔드포인트 추가
 router.get('/search', async (req, res) => {
   const { title, authorId } = req.query;
