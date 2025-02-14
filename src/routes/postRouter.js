@@ -5,6 +5,7 @@ import { createPost } from '../handlers/postHandler.js';
 import authenticateToken from '../middleware/authenticateToken.js';
 import { deletePost, findPostById, updatePost } from '../db/postDb.js';
 import { checkAdminPermission } from '../middleware/checkAdmin.js';
+import Redis from 'ioredis';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -17,6 +18,8 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
+
+const redis = new Redis();
 
 /**
  * @swagger
@@ -210,6 +213,61 @@ router.delete('/:id', authenticateToken, checkAdminPermission, async (req, res) 
   } catch (error) {
     console.error('게시글 삭제 오류:', error);
     res.status(400).json({ error: '게시글 삭제 실패', details: error.message });
+  }
+});
+
+// 검색 엔드포인트 추가
+router.get('/search', async (req, res) => {
+  const { title, authorId } = req.query;
+  const searchKey = `search:${title || ''}:${authorId || ''}`;
+
+  try {
+    // Redis에서 캐시된 결과 확인
+    const cachedResults = await redis.get(searchKey);
+    if (cachedResults) {
+      // 검색 횟수 기록
+      await redis.zincrby('searchCounts', 1, searchKey);
+      return res.status(200).json(JSON.parse(cachedResults));
+    }
+
+    // Redis에서 검색
+    const keys = await redis.keys(`post:*`);
+    const results = [];
+    for (const key of keys) {
+      const post = JSON.parse(await redis.get(key));
+      if (
+        (title && post.title.includes(title)) ||
+        (authorId && post.authorId === parseInt(authorId))
+      ) {
+        results.push(post);
+      }
+    }
+
+    // 검색 결과 캐싱
+    await redis.set(searchKey, JSON.stringify(results), 'EX', 3600); // 1시간 캐시
+
+    // 검색 횟수 기록
+    await redis.zincrby('searchCounts', 1, searchKey);
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('검색 오류:', error);
+    res.status(500).json({ error: '검색 실패', details: error.message });
+  }
+});
+
+// 인기 검색어 반환 엔드포인트 추가
+router.get('/search/top', async (req, res) => {
+  try {
+    const topSearches = await redis.zrevrange('searchCounts', 0, 9, 'WITHSCORES');
+    const formattedResults = [];
+    for (let i = 0; i < topSearches.length; i += 2) {
+      formattedResults.push({ query: topSearches[i], count: parseInt(topSearches[i + 1]) });
+    }
+    res.status(200).json(formattedResults);
+  } catch (error) {
+    console.error('인기 검색어 조회 오류:', error);
+    res.status(500).json({ error: '인기 검색어 조회 실패', details: error.message });
   }
 });
 
